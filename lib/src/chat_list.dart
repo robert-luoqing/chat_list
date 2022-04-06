@@ -18,7 +18,7 @@ class ChatList extends StatefulWidget {
     required this.itemBuilder,
     this.latestReadMessageKey,
     this.showLastReadMessageButton = true,
-    this.lastReadMessageButtonPosition = const Position(right: 10, bottom: 20),
+    this.lastReadMessageButtonPosition = const Position(right: 10, top: 20),
     this.lastReadMessageButtonBuilder,
     this.lastReadMessageTipBuilder,
     this.loadMoreMessagesWhileMissLatestMsg,
@@ -31,6 +31,7 @@ class ChatList extends StatefulWidget {
     this.loadNextWidgetBuilder,
     this.loadPrevWidgetBuilder,
     this.showNewMessageComingButton = true,
+    this.newMessageComingButtonPosition = const Position(right: 10, bottom: 20),
     this.newMessageComingButtonBuilder,
   }) : super(key: key);
 
@@ -78,6 +79,7 @@ class ChatList extends StatefulWidget {
 
   /// The scroll is not in top while user read messages, in this time, new message coming, Does it need should new message coming button
   final bool showNewMessageComingButton;
+  final Position newMessageComingButtonPosition;
   final Widget Function(int newCount)? newMessageComingButtonBuilder;
 
   @override
@@ -223,11 +225,34 @@ class _ChatListState extends State<ChatList> {
   }
 
   Widget _renderLastReadButton() {
-    return Container(
-      child: TextButton(
-        onPressed: (() {}),
-        child: Text("Jump to latest messages"),
-      ),
+    return GestureDetector(
+      onTap: () {},
+      child: Ink(
+          child: Container(
+        decoration: const BoxDecoration(
+            color: Colors.grey,
+            borderRadius: BorderRadius.all(Radius.circular(30))),
+        child: Padding(
+          padding: EdgeInsets.all(8.0),
+          child: Text("Jump to latest messages"),
+        ),
+      )),
+    );
+  }
+
+  Widget _renderNewMsgComing() {
+    return GestureDetector(
+      onTap: () {},
+      child: Ink(
+          child: Container(
+        decoration: const BoxDecoration(
+            color: Colors.grey,
+            borderRadius: BorderRadius.all(Radius.circular(30))),
+        child: Padding(
+          padding: EdgeInsets.all(8.0),
+          child: Text("3 new messages"),
+        ),
+      )),
     );
   }
 
@@ -240,7 +265,13 @@ class _ChatListState extends State<ChatList> {
           left: widget.lastReadMessageButtonPosition.left,
           right: widget.lastReadMessageButtonPosition.right,
           bottom: widget.lastReadMessageButtonPosition.bottom,
-          child: _renderLastReadButton())
+          child: _renderLastReadButton()),
+      Positioned(
+          top: widget.newMessageComingButtonPosition.top,
+          left: widget.newMessageComingButtonPosition.left,
+          right: widget.newMessageComingButtonPosition.right,
+          bottom: widget.newMessageComingButtonPosition.bottom,
+          child: _renderNewMsgComing())
     ]);
   }
 
