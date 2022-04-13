@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 
 import 'msg_model.dart';
 
+const UnreadMessageKey = "unreadId";
+
 class TestChatList extends StatefulWidget {
   const TestChatList({Key? key}) : super(key: key);
 
@@ -14,26 +16,37 @@ class TestChatList extends StatefulWidget {
 class _TestChatListState extends State<TestChatList> {
   List<MsgModel>? messages;
   final inputMsgController = TextEditingController();
+  final chatListController = ChatListController();
+  String? latestMessageKey;
 
   @override
   void initState() {
     _loadMessages();
-
+    latestMessageKey = UnreadMessageKey;
     super.initState();
   }
 
   /// It is mockup to load messages from server
   _loadMessages() async {
     messages = await MsgProvider().fetchMessages();
+    // messages = await MsgProvider().fetchMessagesWithKey(UnreadMessageKey);
+    // latestMessageKey = messages![messages!.length - 10].id;
     setState(() {});
   }
 
   _mockToReceiveMessage() {
-    // var times = Random().nextInt(4) + 1;
-    // for (var i = 0; i < times; i++) {
-    //   _insertReceiveMessage("The demo also show how to reverse a list in\r\n" *
-    //       (Random().nextInt(4) + 1));
-    // }
+    var receivedMsgs = MsgProvider().getNewReceiveMsgList(3);
+    for (var receiveMsg in receivedMsgs) {
+      messages?.insert(0, receiveMsg);
+    }
+
+    chatListController.notifyNewMessageComing(receivedMsgs[0].id);
+    setState(() {});
+  }
+
+  Future _loadMoreMessagesWhileMissLatestMsg() async {
+    setState(() {});
+    messages = await MsgProvider().fetchMessagesWithKey(UnreadMessageKey);
     setState(() {});
   }
 
@@ -104,11 +117,67 @@ class _TestChatListState extends State<TestChatList> {
     }
   }
 
+  Widget _renderScrollToTop(BuildContext context) {
+    return Ink(
+        child: Container(
+      decoration: const BoxDecoration(
+          color: Colors.yellow,
+          borderRadius: BorderRadius.all(Radius.circular(30))),
+      child: const Padding(
+        padding: EdgeInsets.all(8.0),
+        child: Text("Scroll to top"),
+      ),
+    ));
+  }
+
+  Widget _renderNewMessageTipButton(BuildContext context, int newMsgCount) {
+    return Ink(
+        child: Container(
+      decoration: const BoxDecoration(
+          color: Colors.blue,
+          borderRadius: BorderRadius.all(Radius.circular(30))),
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Text(newMsgCount.toString() + " new messages comming"),
+      ),
+    ));
+  }
+
+  Widget _lastReadMessageTipBuilder(BuildContext context) {
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.all(8.0),
+        child: Text(
+          "Latest read message",
+          style: TextStyle(color: Colors.red),
+        ),
+      ),
+    );
+  }
+
   _renderList() {
     return ChatList(
         messageCount: messages?.length ?? 0,
         itemBuilder: (BuildContext context, int index) => _renderItem(index),
-        onMessageKey: (int index) => messages![index].id);
+        onMessageKey: (int index) => messages![index].id,
+        controller: chatListController,
+        // New message tip
+        showNewMessageComingButton: true,
+        newMessageComingButtonPosition: const Position(right: 10, bottom: 20),
+        newMessageComingButtonBuilder: _renderNewMessageTipButton,
+        onIsReceiveMessage: (int i) => messages![i].type == MsgType.receive,
+
+        // Scroll to top
+        showScrollToTop: true,
+        offsetToShowScrollToTop: 400.0,
+        scrollToTopBuilder: _renderScrollToTop,
+
+        // Last read message
+        showLastReadMessageButton: true,
+        latestReadMessageKey: latestMessageKey,
+        loadMoreMessagesWhileMissLatestMsg: _loadMoreMessagesWhileMissLatestMsg,
+        lastUnreadMsgOffsetFromTop: 50,
+        lastReadMessageTipBuilder: _lastReadMessageTipBuilder);
   }
 
   @override
