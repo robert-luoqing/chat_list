@@ -6,7 +6,7 @@ import 'package:uuid/uuid.dart';
 
 class MsgProvider {
   Future<List<MsgModel>> fetchMessages() async {
-    await Future.delayed(const Duration(milliseconds: 500));
+    await Future.delayed(const Duration(milliseconds: 1000));
     List<MsgModel> messages = [];
     for (var i = 0; i < 50; i++) {
       if (i != 9) {

@@ -1,5 +1,6 @@
 import 'package:chat_list/chat_list.dart';
 import 'package:chat_list_example/msg_provider.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import 'msg_model.dart';
@@ -19,6 +20,9 @@ class _TestChatListState extends State<TestChatList> {
   final chatListController = ChatListController();
   String? latestMessageKey;
 
+  bool hasPrevMessages = false;
+  bool hasMoreMessages = true;
+
   @override
   void initState() {
     _loadMessages();
@@ -36,17 +40,19 @@ class _TestChatListState extends State<TestChatList> {
 
   _mockToReceiveMessage() {
     var receivedMsgs = MsgProvider().getNewReceiveMsgList(3);
-    for (var receiveMsg in receivedMsgs) {
-      messages?.insert(0, receiveMsg);
+    if (hasPrevMessages == false) {
+      for (var receiveMsg in receivedMsgs) {
+        messages?.insert(0, receiveMsg);
+      }
     }
 
-    chatListController.notifyNewMessageComing(receivedMsgs[0].id);
+    chatListController.notifyNewMessageComing(receivedMsgs[0].id, 3);
     setState(() {});
   }
 
   Future _loadMoreMessagesWhileMissLatestMsg() async {
-    setState(() {});
     messages = await MsgProvider().fetchMessagesWithKey(UnreadMessageKey);
+    hasPrevMessages = true;
     setState(() {});
   }
 
@@ -155,6 +161,57 @@ class _TestChatListState extends State<TestChatList> {
     );
   }
 
+  Widget _renderLoadWidget(BuildContext context, LoadStatus? mode) {
+    Widget body;
+    if (mode == LoadStatus.idle) {
+      body = const Text("Pull down to load more message");
+    } else if (mode == LoadStatus.loading) {
+      body = const CupertinoActivityIndicator();
+    } else if (mode == LoadStatus.failed) {
+      body = const Text("Load Failed!Click retry!");
+    } else if (mode == LoadStatus.canLoading) {
+      body = const Text("Release to load more");
+    } else {
+      body = const Text("No more Data");
+    }
+    return Container(
+      color: Colors.red,
+      child: SizedBox(
+        height: 55.0,
+        child: Center(child: body),
+      ),
+    );
+  }
+
+  Widget _renderRefreshWidget(BuildContext context, RefreshStatus? mode) {
+    Widget body;
+    if (mode == RefreshStatus.idle) {
+      body = const Text("Pull up load prev msg");
+    } else if (mode == RefreshStatus.refreshing) {
+      body = const ListSkeleton(line: 2);
+    } else if (mode == RefreshStatus.failed) {
+      body = const Text("Load Failed!Click retry!");
+    } else if (mode == RefreshStatus.canRefresh) {
+      body = const Text("Release to load more");
+    } else {
+      body = const Text("No more Data");
+    }
+    if (mode == RefreshStatus.completed) {
+      return Container();
+    } else {
+      return RotatedBox(
+        quarterTurns: 2,
+        child: Container(
+          color: Colors.yellow,
+          child: SizedBox(
+            height: 55.0,
+            child: Center(child: body),
+          ),
+        ),
+      );
+    }
+  }
+
   _renderList() {
     return ChatList(
         messageCount: messages?.length ?? 0,
@@ -171,13 +228,44 @@ class _TestChatListState extends State<TestChatList> {
         showScrollToTop: true,
         offsetToShowScrollToTop: 400.0,
         scrollToTopBuilder: _renderScrollToTop,
+        loadTopMessagesWhenJumpToTop: () async {
+          messages = await MsgProvider().fetchMessages();
+          hasPrevMessages = false;
+          setState(() {});
+        },
 
         // Last read message
         showLastReadMessageButton: true,
         latestReadMessageKey: latestMessageKey,
         loadMoreMessagesWhileMissLatestMsg: _loadMoreMessagesWhileMissLatestMsg,
         lastUnreadMsgOffsetFromTop: 50,
-        lastReadMessageTipBuilder: _lastReadMessageTipBuilder);
+        lastReadMessageTipBuilder: _lastReadMessageTipBuilder,
+
+        // Load more
+        hasMoreNextMessages: hasMoreMessages,
+        loadNextMessageOffset: 10,
+        loadPrevWidgetBuilder: _renderRefreshWidget,
+        loadNextMessages: () async {
+          var newMessages = await MsgProvider().fetchMessages();
+          messages!.addAll(newMessages);
+          if (messages!.length > 200) {
+            hasMoreMessages = false;
+          }
+          setState(() {});
+        },
+
+        // Refresh
+        hasMorePrevMessages: hasPrevMessages,
+        loadPrevMessageOffset: 100,
+        loadNextWidgetBuilder: _renderLoadWidget,
+        loadPrevMessages: () async {
+          var newMessages = await MsgProvider().fetchMessages();
+          messages!.insertAll(0, newMessages);
+          if (messages!.length > 200) {
+            hasPrevMessages = false;
+          }
+          setState(() {});
+        });
   }
 
   @override
