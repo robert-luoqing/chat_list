@@ -34,7 +34,7 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.2
-  chat_list:
+  flutter_chat_list:
     path: ../
   uuid: ^3.0.4
   english_words: ^4.0.0
