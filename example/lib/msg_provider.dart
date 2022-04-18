@@ -6,22 +6,31 @@ import 'package:uuid/uuid.dart';
 
 class MsgProvider {
   /// Loading [count] messages from [fromTimestamp]
-  /// The statement should be time >=[fromTimestamp] order by time asc
-  /// The list order by time by asc
+  /// The statement should be time >=[fromTimestamp] order by time desc
+  /// The list order by time by desc
   Future<List<MsgModel>> fetchMessagesFrom(int fromTimestamp, int count) async {
     await Future.delayed(const Duration(milliseconds: 1000));
     List<MsgModel> messages = [];
+    var startTimestampInterval = 12;
     for (var i = 0; i < count; i++) {
-      if (i != 9) {
-        var msg = generateWordPairs().take(Random().nextInt(10)).toString();
-        if (Random().nextInt(10) % 2 == 0) {
-          insertReceiveMessage(messages, msg * (Random().nextInt(2) + 1));
-        } else {
-          insertSendMessage(messages, msg * (Random().nextInt(2) + 1));
-        }
+      var msg = generateWordPairs().take(Random().nextInt(10)).toString();
+      if (Random().nextInt(10) % 2 == 0) {
+        insertReceiveMessage(messages, msg * (Random().nextInt(2) + 1),
+            seconds: startTimestampInterval,
+            from: DateTime.fromMillisecondsSinceEpoch(fromTimestamp == 0
+                ? DateTime.now().millisecondsSinceEpoch
+                : fromTimestamp),
+            appendToTailer: true);
       } else {
-        insertReceiveMessage(messages, "Last readed message");
+        insertSendMessage(messages, msg * (Random().nextInt(2) + 1),
+            seconds: startTimestampInterval,
+            from: DateTime.fromMillisecondsSinceEpoch(fromTimestamp == 0
+                ? DateTime.now().millisecondsSinceEpoch
+                : fromTimestamp),
+            appendToTailer: true);
       }
+
+      startTimestampInterval += Random().nextInt(60 * 2);
     }
 
     return messages;
@@ -29,90 +38,47 @@ class MsgProvider {
 
   /// Loading [count] messages to [toTimestamp]
   /// There is difference from [fetchMessagesFrom], fetch record condition should be
-  /// time <=[toTimestamp] order by time desc
+  /// time <=[toTimestamp] order by time asc
   /// No matter query table by desc, The result value must order with time by asc
   Future<List<MsgModel>> fetchMessagesTo(int toTimestamp, int count) async {
     await Future.delayed(const Duration(milliseconds: 1000));
     List<MsgModel> messages = [];
+    var startTimestampInterval = 12;
     for (var i = 0; i < count; i++) {
-      if (i != 9) {
-        var msg = generateWordPairs().take(Random().nextInt(10)).toString();
-        if (Random().nextInt(10) % 2 == 0) {
-          insertReceiveMessage(messages, msg * (Random().nextInt(2) + 1));
-        } else {
-          insertSendMessage(messages, msg * (Random().nextInt(2) + 1));
-        }
+      var msg = generateWordPairs().take(Random().nextInt(10)).toString();
+      if (Random().nextInt(10) % 2 == 0) {
+        insertReceiveMessage(messages, msg * (Random().nextInt(2) + 1),
+            seconds: startTimestampInterval, appendToTailer: true);
       } else {
-        insertReceiveMessage(messages, "Last readed message");
+        insertSendMessage(messages, msg * (Random().nextInt(2) + 1),
+            seconds: startTimestampInterval, appendToTailer: true);
       }
+
+      startTimestampInterval += Random().nextInt(60 * 2);
     }
 
     return messages;
   }
 
-  /// When jump to specify key message, but the message not exist.
-  /// We should load messages from providers
-  /// The result value must order with time by asc
   Future<List<MsgModel>> fetchMessagesAroundKey(String msgId, int count) async {
-    List<MsgModel> messages = [];
-    var curMsg =
-        insertReceiveMessage(messages, "Last readed message", key: msgId);
-    // Get prev 10 message
-    var prevMessages =
-        await fetchMessagesTo(curMsg.time.millisecondsSinceEpoch, 60);
-    var nextMessages =
-        await fetchMessagesFrom(curMsg.time.millisecondsSinceEpoch, 10);
-
-    var result = mergeAndRemoveDuplicateMsgs(prevMessages, [curMsg]);
-    result = mergeAndRemoveDuplicateMsgs(result, nextMessages);
-    result.sort(((a, b) =>
-        a.time.millisecondsSinceEpoch - b.time.millisecondsSinceEpoch));
-    var newResult = <MsgModel>[];
-    // Fetch [count] item from tail to top
-    for (var i = result.length - 1; i >= 0; i--) {
-      newResult.insert(0, result[i]);
-      if (newResult.length == count) break;
-    }
-
-    return newResult;
-  }
-
-  /// Merge message, remove duplicate record
-  List<MsgModel> mergeAndRemoveDuplicateMsgs(
-      List<MsgModel> msg1s, List<MsgModel> msg2s) {
-    // create map
-    var msgMaps = <String, MsgModel>{};
-    var result = <MsgModel>[];
-    for (var msg1 in msg1s) {
-      if (msgMaps[msg1.id] == null) {
-        msgMaps[msg1.id] = msg1;
-        result.add(msg1);
-      }
-    }
-    for (var msg2 in msg2s) {
-      if (msgMaps[msg2.id] == null) {
-        msgMaps[msg2.id] = msg2;
-        result.add(msg2);
-      }
-    }
-
-    return result;
-  }
-
-  Future<List<MsgModel>> fetchMessagesWithKey(String key) async {
     await Future.delayed(const Duration(milliseconds: 500));
     List<MsgModel> messages = [];
-    for (var i = 0; i < 50; i++) {
-      if (i != 9) {
+    var startTimestampInterval = 12;
+    for (var i = 0; i < count; i++) {
+      if (i != count - 9) {
         var msg = generateWordPairs().take(Random().nextInt(10)).toString();
         if (Random().nextInt(10) % 2 == 0) {
-          insertReceiveMessage(messages, msg * (Random().nextInt(2) + 1));
+          insertReceiveMessage(messages, msg * (Random().nextInt(2) + 1),
+              seconds: startTimestampInterval, appendToTailer: true);
         } else {
-          insertSendMessage(messages, msg * (Random().nextInt(2) + 1));
+          insertSendMessage(messages, msg * (Random().nextInt(2) + 1),
+              seconds: startTimestampInterval, appendToTailer: true);
         }
       } else {
-        insertReceiveMessage(messages, "Last readed message", key: key);
+        insertReceiveMessage(messages, "Last readed message",
+            seconds: startTimestampInterval, key: msgId, appendToTailer: true);
       }
+      startTimestampInterval += Random().nextInt(60 * 2);
     }
 
     return messages;
@@ -122,15 +88,18 @@ class MsgProvider {
     List<MsgModel> messages = [];
     for (var i = 0; i < count; i++) {
       var msg = generateWordPairs().take(Random().nextInt(10)).toString();
-      insertReceiveMessage(messages, msg * (Random().nextInt(2) + 1));
+      insertReceiveMessage(messages, msg * (Random().nextInt(2) + 1),
+          seconds: i + 10);
     }
 
     return messages;
   }
 
   MsgModel insertSendMessage(List<MsgModel> messages, String msg,
-      {bool appendToTailer = false}) {
-    var time = DateTime.now();
+      {bool appendToTailer = false, DateTime? from, int seconds = 0}) {
+    from ??= DateTime.now();
+    var millSeconds = 1000 * seconds;
+    var time = from.add(Duration(milliseconds: -millSeconds));
     if (appendToTailer) {
       var msgObj = MsgModel(
           id: const Uuid().v4(),
@@ -151,8 +120,13 @@ class MsgProvider {
   }
 
   MsgModel insertReceiveMessage(List<MsgModel> messages, String msg,
-      {bool appendToTailer = false, String? key}) {
-    var time = DateTime.now();
+      {bool appendToTailer = false,
+      String? key,
+      DateTime? from,
+      int seconds = 0}) {
+    from ??= DateTime.now();
+    var millSeconds = 1000 * seconds;
+    var time = from.add(Duration(milliseconds: -millSeconds));
     if (appendToTailer) {
       var msgObj = MsgModel(
           id: key ?? const Uuid().v4(),

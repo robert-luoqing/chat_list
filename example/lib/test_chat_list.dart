@@ -1,10 +1,12 @@
 import 'package:chat_list/chat_list.dart';
 import 'package:chat_list_example/msg_provider.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
+import 'package:uuid/uuid.dart';
 
 import 'msg_model.dart';
+import 'text_msg.dart';
+import 'time_tag_msg.dart';
 
 const unreadMessageKey = "unreadId";
 
@@ -19,7 +21,10 @@ class _TestChatListState extends State<TestChatList> {
   List<MsgModel>? messages;
   final inputMsgController = TextEditingController();
   final chatListController = ChatListController();
+  final timetagUtil = StepTimetagUtil();
+  final timeTagPolicies = ["2m", "5m", "10m", "30m", "2h"];
   String? latestMessageKey;
+  int unreadMsgCount = 0;
 
   bool hasPrevMessages = false;
   bool hasMoreMessages = true;
@@ -33,6 +38,7 @@ class _TestChatListState extends State<TestChatList> {
   void initState() {
     _loadMessages();
     latestMessageKey = unreadMessageKey;
+    unreadMsgCount = 80;
     super.initState();
   }
 
@@ -40,15 +46,23 @@ class _TestChatListState extends State<TestChatList> {
   _loadMessages() async {
     EasyLoading.show(status: 'loading...');
     try {
+      hasPrevMessages = false;
       messages =
           await MsgProvider().fetchMessagesFrom(latestLoadedMsgTimestamp, 40);
       // messages = await MsgProvider().fetchMessagesWithKey(UnreadMessageKey);
       hasMoreMessages = (messages!.length == 40);
-      hasPrevMessages = false;
       if (messages!.isNotEmpty) {
         latestLoadedMsgTimestamp = messages!.last.time.millisecondsSinceEpoch;
       }
-
+      messages = timetagUtil.generateTimeTags(
+          messages: messages!,
+          getMsgTime: (msg) => msg.time,
+          onCreateTimeTag: (time) => MsgModel(
+              id: const Uuid().v4(),
+              msg: "",
+              type: MsgType.timetag,
+              time: time),
+          timeTagPolicies: timeTagPolicies);
       setState(() {});
     } catch (e, s) {
       EasyLoading.showError(e.toString());
@@ -71,6 +85,16 @@ class _TestChatListState extends State<TestChatList> {
         prevLoadedMsgTimestamp = messages!.first.time.millisecondsSinceEpoch;
       }
 
+      messages = timetagUtil.generateTimeTags(
+          messages: messages!,
+          getMsgTime: (msg) => msg.time,
+          onCreateTimeTag: (time) => MsgModel(
+              id: const Uuid().v4(),
+              msg: "",
+              type: MsgType.timetag,
+              time: time),
+          timeTagPolicies: timeTagPolicies);
+
       setState(() {});
     } catch (e, s) {
       EasyLoading.showError(e.toString());
@@ -80,18 +104,29 @@ class _TestChatListState extends State<TestChatList> {
   }
 
   Future _loadTopMessagesWhenJumpToTop() async {
-    _loadMessages();
+    await _loadMessages();
   }
 
   /// The method don't need try catch
   Future _loadMoreMessages() async {
     var newMessages =
         await MsgProvider().fetchMessagesFrom(latestLoadedMsgTimestamp, 40);
-    hasMoreMessages = (messages!.length == 40);
+    hasMoreMessages = (newMessages.length == 40);
     if (newMessages.isNotEmpty) {
       latestLoadedMsgTimestamp = newMessages.last.time.millisecondsSinceEpoch;
     }
-    messages!.addAll(newMessages);
+
+    messages = timetagUtil.mergeIncomeNewMessages(
+        messages: messages!,
+        isAddTop: false,
+        addedMsgs: newMessages,
+        getMsgTime: (msg) => msg.time,
+        isTimeTagMsg: (msg) => msg.type == MsgType.timetag,
+        onCreateTimeTag: (time) => MsgModel(
+            id: const Uuid().v4(), msg: "", type: MsgType.timetag, time: time),
+        timeTagPolicies: timeTagPolicies,
+        getMsgId: (msg) => msg.id);
+
     setState(() {});
   }
 
@@ -99,20 +134,42 @@ class _TestChatListState extends State<TestChatList> {
   Future _loadPrevMessages() async {
     var newMessages =
         await MsgProvider().fetchMessagesTo(prevLoadedMsgTimestamp ?? 0, 40);
-    hasPrevMessages = (messages!.length == 40);
+    hasPrevMessages = (newMessages.length == 40);
     if (hasPrevMessages) {
-      prevLoadedMsgTimestamp = messages!.first.time.millisecondsSinceEpoch;
+      prevLoadedMsgTimestamp = newMessages.first.time.millisecondsSinceEpoch;
     }
-    messages!.insertAll(0, newMessages);
+
+    messages = timetagUtil.mergeIncomeNewMessages(
+        messages: messages!,
+        isAddTop: true,
+        addedMsgs: newMessages,
+        getMsgTime: (msg) => msg.time,
+        isTimeTagMsg: (msg) => msg.type == MsgType.timetag,
+        onCreateTimeTag: (time) => MsgModel(
+            id: const Uuid().v4(), msg: "", type: MsgType.timetag, time: time),
+        timeTagPolicies: timeTagPolicies,
+        getMsgId: (msg) => msg.id);
+
     setState(() {});
   }
 
   _mockToReceiveMessage() {
     var receivedMsgs = MsgProvider().getNewReceiveMsgList(3);
     if (hasPrevMessages == false) {
-      for (var receiveMsg in receivedMsgs) {
-        messages?.insert(0, receiveMsg);
-      }
+      messages ??= [];
+      messages = timetagUtil.mergeIncomeNewMessages(
+          messages: messages!,
+          isAddTop: true,
+          addedMsgs: receivedMsgs,
+          getMsgTime: (msg) => msg.time,
+          isTimeTagMsg: (msg) => msg.type == MsgType.timetag,
+          onCreateTimeTag: (time) => MsgModel(
+              id: const Uuid().v4(),
+              msg: "",
+              type: MsgType.timetag,
+              time: time),
+          timeTagPolicies: timeTagPolicies,
+          getMsgId: (msg) => msg.id);
     }
 
     chatListController.notifyNewMessageComing(receivedMsgs[0].id, 3);
@@ -122,12 +179,13 @@ class _TestChatListState extends State<TestChatList> {
   _sendMessage() {
     try {
       if (inputMsgController.text.isNotEmpty) {
-        // if (messages.isNotEmpty) {
+        // if (messages!=null && messages.isNotEmpty) {
         //   listViewController.sliverController.jumpToIndex(0);
         // }
         messages ??= [];
         setState(() {
-          MsgProvider().insertSendMessage(messages!, inputMsgController.text);
+          MsgProvider().insertSendMessage(messages!, inputMsgController.text,
+              seconds: 0);
         });
 
         inputMsgController.text = "";
@@ -139,189 +197,59 @@ class _TestChatListState extends State<TestChatList> {
 
   _renderItem(int index) {
     var msg = messages![index];
-    if (msg.type == MsgType.tag) {
-      return Align(
-        alignment: Alignment.center,
-        child: Padding(
-          padding: const EdgeInsets.all(10.0),
-          child: Container(
-            decoration: const BoxDecoration(
-                color: Colors.grey,
-                borderRadius: BorderRadius.all(Radius.circular(5))),
-            child: Padding(
-              padding: const EdgeInsets.all(10.0),
-              child: Text(
-                msg.msg,
-                style: const TextStyle(fontSize: 14.0, color: Colors.white),
-              ),
-            ),
-          ),
-        ),
-      );
+    if (msg.type == MsgType.timetag) {
+      return TimetagMsg(message: msg);
     } else {
-      return Align(
-        alignment: msg.type == MsgType.sent
-            ? Alignment.centerRight
-            : Alignment.centerLeft,
-        child: Padding(
-          padding: const EdgeInsets.all(10.0),
-          child: Container(
-            decoration: BoxDecoration(
-                color: msg.type == MsgType.sent ? Colors.blue : Colors.green,
-                borderRadius: msg.type == MsgType.sent
-                    ? const BorderRadius.only(
-                        topLeft: Radius.circular(20),
-                        bottomLeft: Radius.circular(20),
-                        bottomRight: Radius.circular(20))
-                    : const BorderRadius.only(
-                        topRight: Radius.circular(20),
-                        bottomLeft: Radius.circular(20),
-                        bottomRight: Radius.circular(20))),
-            child: Padding(
-              padding: const EdgeInsets.all(10.0),
-              child: Text(
-                msg.msg,
-                style: const TextStyle(fontSize: 14.0, color: Colors.white),
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-  }
-
-  Widget _renderScrollToTop(BuildContext context) {
-    return Ink(
-        child: Container(
-      decoration: const BoxDecoration(
-          color: Colors.yellow,
-          borderRadius: BorderRadius.all(Radius.circular(30))),
-      child: const Padding(
-        padding: EdgeInsets.all(8.0),
-        child: Text("Scroll to top"),
-      ),
-    ));
-  }
-
-  Widget _renderNewMessageTipButton(BuildContext context, int newMsgCount) {
-    return Ink(
-        child: Container(
-      decoration: const BoxDecoration(
-          color: Colors.blue,
-          borderRadius: BorderRadius.all(Radius.circular(30))),
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Text(newMsgCount.toString() + " new messages comming"),
-      ),
-    ));
-  }
-
-  Widget _lastReadMessageTipBuilder(BuildContext context) {
-    return const Center(
-      child: Padding(
-        padding: EdgeInsets.all(8.0),
-        child: Text(
-          "Latest read message",
-          style: TextStyle(color: Colors.red),
-        ),
-      ),
-    );
-  }
-
-  Widget _renderLoadWidget(BuildContext context, LoadStatus? mode) {
-    Widget body;
-    if (mode == LoadStatus.idle) {
-      body = const Text("Pull down to load more message");
-    } else if (mode == LoadStatus.loading) {
-      body = const CupertinoActivityIndicator();
-    } else if (mode == LoadStatus.failed) {
-      body = const Text("Load Failed!Click retry!");
-    } else if (mode == LoadStatus.canLoading) {
-      body = const Text("Release to load more");
-    } else {
-      body = const Text("No more Data");
-    }
-    return Container(
-      color: Colors.red,
-      child: SizedBox(
-        height: 55.0,
-        child: Center(child: body),
-      ),
-    );
-  }
-
-  Widget _renderRefreshWidget(BuildContext context, RefreshStatus? mode) {
-    Widget body;
-    if (mode == RefreshStatus.idle) {
-      body = const Text("Pull up load prev msg");
-    } else if (mode == RefreshStatus.refreshing) {
-      body = const ListSkeleton(line: 2);
-    } else if (mode == RefreshStatus.failed) {
-      body = const Text("Load Failed!Click retry!");
-    } else if (mode == RefreshStatus.canRefresh) {
-      body = const Text("Release to load more");
-    } else {
-      body = const Text("No more Data");
-    }
-    if (mode == RefreshStatus.completed) {
-      return Container();
-    } else {
-      return RotatedBox(
-        quarterTurns: 2,
-        child: Container(
-          color: Colors.yellow,
-          child: SizedBox(
-            height: 55.0,
-            child: Center(child: body),
-          ),
-        ),
-      );
+      return TextMsg(message: msg);
     }
   }
 
   Widget _renderList() {
     return ChatList(
-        messageCount: messages?.length ?? 0,
-        itemBuilder: (BuildContext context, int index) => _renderItem(index),
-        onMessageKey: (int index) => messages![index].id,
-        controller: chatListController,
-        // New message tip
-        showNewMessageComingButton: true,
-        newMessageComingButtonPosition: const Position(right: 10, bottom: 20),
-        newMessageComingButtonBuilder: _renderNewMessageTipButton,
-        onIsReceiveMessage: (int i) => messages![i].type == MsgType.receive,
+      messageCount: messages?.length ?? 0,
+      itemBuilder: (BuildContext context, int index) => _renderItem(index),
+      onMessageKey: (int index) => messages![index].id,
+      controller: chatListController,
+      // New message tip
+      showNewMessageComingButton: true,
+      newMessageComingButtonPosition: const Position(right: 0, bottom: 20),
+      // newMessageComingButtonBuilder: defaultNewMessageComingButtonBuilder,
+      onIsReceiveMessage: (int i) => messages![i].type == MsgType.receive,
 
-        // Scroll to top
-        showScrollToTop: true,
-        offsetToShowScrollToTop: 400.0,
-        scrollToTopBuilder: _renderScrollToTop,
-        loadTopMessagesWhenJumpToTop: _loadTopMessagesWhenJumpToTop,
+      // Scroll to top
+      showScrollToTop: true,
+      offsetToShowScrollToTop: 400.0,
+      // scrollToTopBuilder: defaultScrollToTopBuilder,
+      loadTopMessagesWhenJumpToTop: _loadTopMessagesWhenJumpToTop,
 
-        // Last read message
-        showLastReadMessageButton: true,
-        latestReadMessageKey: latestMessageKey,
-        loadMoreMessagesWhileMissLatestMsg: _loadMoreMessagesWhileMissLatestMsg,
-        lastUnreadMsgOffsetFromTop: 50,
-        lastReadMessageTipBuilder: _lastReadMessageTipBuilder,
+      // Last read message
+      showLastReadMessageButton: true,
+      latestReadMessageKey: latestMessageKey,
+      latestUnreadMsgCount: unreadMsgCount,
+      lastReadMessageButtonPosition: const Position(right: 0, top: 20),
+      loadMoreMessagesWhileMissLatestMsg: _loadMoreMessagesWhileMissLatestMsg,
+      lastUnreadMsgOffsetFromTop: 50,
+      // lastReadMessageButtonBuilder: defaultLastReadMessageButtonBuilder,
 
-        // Load more
-        hasMoreNextMessages: hasMoreMessages,
-        loadNextMessageOffset: 10,
-        loadPrevWidgetBuilder: _renderRefreshWidget,
-        loadNextMessages: _loadMoreMessages,
+      // Refresh
+      hasMorePrevMessages: hasPrevMessages,
+      loadPrevMessageOffset: 100,
+      loadPrevWidgetBuilder: defaultLoadPrevWidgetBuilder,
+      loadPrevMessages: _loadPrevMessages,
 
-        // Refresh
-        hasMorePrevMessages: hasPrevMessages,
-        loadPrevMessageOffset: 100,
-        loadNextWidgetBuilder: _renderLoadWidget,
-        loadPrevMessages: _loadPrevMessages);
+      // Load more
+      hasMoreNextMessages: hasMoreMessages,
+      loadNextMessageOffset: 10,
+      loadNextWidgetBuilder: defaultLoadNextWidgetBuilder,
+      loadNextMessages: _loadMoreMessages,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
-          title: const Text("Chat"),
+          title: const Text("Complex Chat"),
           actions: [
             TextButton(
                 onPressed: _mockToReceiveMessage,
@@ -340,27 +268,31 @@ class _TestChatListState extends State<TestChatList> {
               }
             },
             behavior: HitTestBehavior.opaque,
-            child: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 8.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Expanded(flex: 1, child: _renderList()),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                      child: Row(children: [
-                        Expanded(
-                          child: TextField(
-                            controller: inputMsgController,
+            child: Container(
+              color: Colors.grey[100],
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 8.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Expanded(flex: 1, child: _renderList()),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                        child: Row(children: [
+                          Expanded(
+                            child: TextField(
+                              controller: inputMsgController,
+                            ),
                           ),
-                        ),
-                        ElevatedButton(
-                            onPressed: _sendMessage, child: const Text("Send"))
-                      ]),
-                    )
-                  ],
+                          ElevatedButton(
+                              onPressed: _sendMessage,
+                              child: const Text("Send"))
+                        ]),
+                      )
+                    ],
+                  ),
                 ),
               ),
             )));

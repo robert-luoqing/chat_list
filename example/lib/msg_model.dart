@@ -13,5 +13,5 @@ class MsgModel {
 enum MsgType {
   sent,
   receive,
-  tag,
+  timetag,
 }

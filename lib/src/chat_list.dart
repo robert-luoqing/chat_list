@@ -6,7 +6,7 @@ import 'package:flutter_list_view/flutter_list_view.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 import 'chat_list_controller.dart';
-import 'list_skeleton.dart';
+import 'default_builder.dart';
 import 'position.dart';
 
 const constKeepPositionOffset = 40.0;
@@ -20,7 +20,8 @@ class ChatList extends StatefulWidget {
     required this.itemBuilder,
     this.latestReadMessageKey,
     this.showLastReadMessageButton = true,
-    this.lastReadMessageButtonPosition = const Position(right: 10, top: 20),
+    this.latestUnreadMsgCount = 0,
+    this.lastReadMessageButtonPosition = const Position(right: 0, top: 20),
     this.lastReadMessageButtonBuilder,
     this.lastReadMessageTipBuilder,
     this.loadMoreMessagesWhileMissLatestMsg,
@@ -34,7 +35,7 @@ class ChatList extends StatefulWidget {
     this.loadNextWidgetBuilder,
     this.loadPrevWidgetBuilder,
     this.showNewMessageComingButton = true,
-    this.newMessageComingButtonPosition = const Position(right: 10, bottom: 20),
+    this.newMessageComingButtonPosition = const Position(right: 0, bottom: 20),
     this.newMessageComingButtonBuilder,
     this.onIsReceiveMessage,
     this.showScrollToTop = true,
@@ -67,8 +68,11 @@ class ChatList extends StatefulWidget {
   final String? latestReadMessageKey;
   final bool showLastReadMessageButton;
   final Position lastReadMessageButtonPosition;
-  final Widget Function(BuildContext context)? lastReadMessageButtonBuilder;
-  final Widget Function(BuildContext context)? lastReadMessageTipBuilder;
+  final int latestUnreadMsgCount;
+  final Widget Function(BuildContext context, int unreadMsgCount)?
+      lastReadMessageButtonBuilder;
+  final Widget Function(BuildContext context, int unreadMsgCount)?
+      lastReadMessageTipBuilder;
   final Future Function()? loadMoreMessagesWhileMissLatestMsg;
   final double lastUnreadMsgOffsetFromTop;
 
@@ -431,51 +435,6 @@ class ChatListState extends State<ChatList> {
     }
   }
 
-  _renderLoadWidget(BuildContext context, LoadStatus? mode) {
-    Widget body;
-    if (mode == LoadStatus.idle) {
-      body = const Text("Pull down to load more message");
-    } else if (mode == LoadStatus.loading) {
-      body = const CupertinoActivityIndicator();
-    } else if (mode == LoadStatus.failed) {
-      body = const Text("Load Failed!Click retry!");
-    } else if (mode == LoadStatus.canLoading) {
-      body = const Text("Release to load more");
-    } else {
-      body = const Text("No more Data");
-    }
-    return SizedBox(
-      height: 55.0,
-      child: Center(child: body),
-    );
-  }
-
-  _renderRefreshWidget(BuildContext context, RefreshStatus? mode) {
-    Widget body;
-    if (mode == RefreshStatus.idle) {
-      body = const Text("Pull up load prev msg");
-    } else if (mode == RefreshStatus.refreshing) {
-      body = const ListSkeleton(line: 2);
-    } else if (mode == RefreshStatus.failed) {
-      body = const Text("Load Failed!Click retry!");
-    } else if (mode == RefreshStatus.canRefresh) {
-      body = const Text("Release to load more");
-    } else {
-      body = const Text("No more Data");
-    }
-    if (mode == RefreshStatus.completed) {
-      return Container();
-    } else {
-      return RotatedBox(
-        quarterTurns: 2,
-        child: SizedBox(
-          height: 55.0,
-          child: Center(child: body),
-        ),
-      );
-    }
-  }
-
   Widget _renderItem(BuildContext context, int index) {
     if (widget.onMessageKey(index) == widget.latestReadMessageKey) {
       return Column(
@@ -483,8 +442,9 @@ class ChatListState extends State<ChatList> {
         children: [
           widget.itemBuilder(context, index),
           widget.lastReadMessageTipBuilder != null
-              ? widget.lastReadMessageTipBuilder!(context)
-              : const Center(child: Text("---------Latest read--------"))
+              ? widget.lastReadMessageTipBuilder!(
+                  context, widget.latestUnreadMsgCount)
+              : defaultLastReadMessageTipBuilder(context, index)
         ],
       );
     }
@@ -504,12 +464,12 @@ class ChatListState extends State<ChatList> {
             completeDuration: const Duration(milliseconds: 0),
             builder: (context, mode) => widget.loadPrevWidgetBuilder != null
                 ? widget.loadPrevWidgetBuilder!(context, mode)
-                : _renderRefreshWidget(context, mode),
+                : defaultLoadPrevWidgetBuilder(context, mode),
           ),
           footer: CustomFooter(
             builder: (context, mode) => widget.loadNextWidgetBuilder != null
                 ? widget.loadNextWidgetBuilder!(context, mode)
-                : _renderLoadWidget(context, mode),
+                : defaultLoadNextWidgetBuilder(context, mode),
           ),
           controller: refreshController,
           onRefresh: _onRefresh,
@@ -539,17 +499,10 @@ class ChatListState extends State<ChatList> {
             return GestureDetector(
               onTap: _scrollToLatestReadMessage,
               child: widget.lastReadMessageButtonBuilder != null
-                  ? widget.lastReadMessageButtonBuilder!(context)
-                  : Ink(
-                      child: Container(
-                      decoration: const BoxDecoration(
-                          color: Colors.grey,
-                          borderRadius: BorderRadius.all(Radius.circular(30))),
-                      child: const Padding(
-                        padding: EdgeInsets.all(8.0),
-                        child: Text("Jump to latest messages"),
-                      ),
-                    )),
+                  ? widget.lastReadMessageButtonBuilder!(
+                      context, widget.latestUnreadMsgCount)
+                  : defaultLastReadMessageButtonBuilder(
+                      context, widget.latestUnreadMsgCount),
             );
           }
           return Container();
@@ -588,16 +541,7 @@ class ChatListState extends State<ChatList> {
       onTap: _scrollToTop,
       child: widget.newMessageComingButtonBuilder != null
           ? widget.newMessageComingButtonBuilder!(context, newMsgCount)
-          : Ink(
-              child: Container(
-              decoration: const BoxDecoration(
-                  color: Colors.grey,
-                  borderRadius: BorderRadius.all(Radius.circular(30))),
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Text(newMsgCount.toString() + " new messages comming"),
-              ),
-            )),
+          : defaultNewMessageComingButtonBuilder(context, newMsgCount),
     );
   }
 
@@ -606,16 +550,7 @@ class ChatListState extends State<ChatList> {
       onTap: _scrollToTop,
       child: widget.scrollToTopBuilder != null
           ? widget.scrollToTopBuilder!(context)
-          : Ink(
-              child: Container(
-              decoration: const BoxDecoration(
-                  color: Colors.grey,
-                  borderRadius: BorderRadius.all(Radius.circular(30))),
-              child: const Padding(
-                padding: EdgeInsets.all(8.0),
-                child: Text("Scroll to top"),
-              ),
-            )),
+          : defaultScrollToTopBuilder(context),
     );
   }
 

@@ -22,6 +22,11 @@ class _HomePageState extends State<HomePage> {
           children: <Widget>[
             ElevatedButton(
                 onPressed: () {
+                  Navigator.of(context).pushNamed("/simpleChatList");
+                },
+                child: const Text("Simple Chat List")),
+            ElevatedButton(
+                onPressed: () {
                   Navigator.of(context).pushNamed("/testChatList");
                 },
                 child: const Text("Test Chat List")),

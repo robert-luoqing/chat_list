@@ -1,4 +1,4 @@
-abstract class Timetag {
+abstract class TimetagUtil {
   /// 1. Add [addedMsgs] into [messages] and remove duplicated messages
   /// 2. Generate time tag amount [addedMsgs] (keep time tag in messages not to change)
   /// if [timeTagPolicies] is ["5m", "20m", "1h", "3h"], is mean create a tag in 5min, 20min, 1hour and 3 hour,
@@ -8,11 +8,11 @@ abstract class Timetag {
       {required List<T> messages,
       required bool isAddTop,
       required List<T> addedMsgs,
-      required DateTime Function(T) getMessageTime,
-      required bool Function() isTimeTagMsg,
+      required DateTime Function(T msg) getMsgTime,
+      required bool Function(T msg) isTimeTagMsg,
       required T Function(DateTime time) onCreateTimeTag,
       required List<String> timeTagPolicies,
-      required String Function(T msg1) getMsgId,
+      required String Function(T msg) getMsgId,
       bool needRegenerateTimeTag = false});
 
   /// Generate time tag amount [messages]
@@ -21,7 +21,7 @@ abstract class Timetag {
   /// after that 3hours, create a time tag each 3 hours
   List<T> generateTimeTags<T>(
       {required List<T> messages,
-      required DateTime Function(T) getMessageTime,
+      required DateTime Function(T) getMsgTime,
       required T Function(DateTime time) onCreateTimeTag,
       required List<String> timeTagPolicies});
 
