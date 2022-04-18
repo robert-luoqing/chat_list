@@ -2,10 +2,11 @@ import 'package:chat_list/chat_list.dart';
 import 'package:chat_list_example/msg_provider.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_easyloading/flutter_easyloading.dart';
 
 import 'msg_model.dart';
 
-const UnreadMessageKey = "unreadId";
+const unreadMessageKey = "unreadId";
 
 class TestChatList extends StatefulWidget {
   const TestChatList({Key? key}) : super(key: key);
@@ -23,18 +24,86 @@ class _TestChatListState extends State<TestChatList> {
   bool hasPrevMessages = false;
   bool hasMoreMessages = true;
 
+  /// if [hasPrevMessages] is true, the [prevLoadedMsgTimestamp] has a value tell widget load previous messages to [prevLoadedMsgTimestamp]
+  /// if [hasMoreMessages] is true, the [latestLoadedMsgTimestamp] has a value tell widget load more messages to [latestLoadedMsgTimestamp]
+  int? prevLoadedMsgTimestamp;
+  int latestLoadedMsgTimestamp = 0;
+
   @override
   void initState() {
     _loadMessages();
-    latestMessageKey = UnreadMessageKey;
+    latestMessageKey = unreadMessageKey;
     super.initState();
   }
 
   /// It is mockup to load messages from server
   _loadMessages() async {
-    messages = await MsgProvider().fetchMessages();
-    // messages = await MsgProvider().fetchMessagesWithKey(UnreadMessageKey);
-    // latestMessageKey = messages![messages!.length - 10].id;
+    EasyLoading.show(status: 'loading...');
+    try {
+      messages =
+          await MsgProvider().fetchMessagesFrom(latestLoadedMsgTimestamp, 40);
+      // messages = await MsgProvider().fetchMessagesWithKey(UnreadMessageKey);
+      hasMoreMessages = (messages!.length == 40);
+      hasPrevMessages = false;
+      if (messages!.isNotEmpty) {
+        latestLoadedMsgTimestamp = messages!.last.time.millisecondsSinceEpoch;
+      }
+
+      setState(() {});
+    } catch (e, s) {
+      EasyLoading.showError(e.toString());
+    } finally {
+      EasyLoading.dismiss();
+    }
+  }
+
+  Future _loadMoreMessagesWhileMissLatestMsg() async {
+    EasyLoading.show(status: 'loading...');
+    try {
+      messages =
+          await MsgProvider().fetchMessagesAroundKey(unreadMessageKey, 40);
+      hasPrevMessages = (messages!.length == 40);
+      hasMoreMessages = true;
+      if (messages!.isNotEmpty) {
+        latestLoadedMsgTimestamp = messages!.last.time.millisecondsSinceEpoch;
+      }
+      if (hasPrevMessages) {
+        prevLoadedMsgTimestamp = messages!.first.time.millisecondsSinceEpoch;
+      }
+
+      setState(() {});
+    } catch (e, s) {
+      EasyLoading.showError(e.toString());
+    } finally {
+      EasyLoading.dismiss();
+    }
+  }
+
+  Future _loadTopMessagesWhenJumpToTop() async {
+    _loadMessages();
+  }
+
+  /// The method don't need try catch
+  Future _loadMoreMessages() async {
+    var newMessages =
+        await MsgProvider().fetchMessagesFrom(latestLoadedMsgTimestamp, 40);
+    hasMoreMessages = (messages!.length == 40);
+    if (newMessages.isNotEmpty) {
+      latestLoadedMsgTimestamp = newMessages.last.time.millisecondsSinceEpoch;
+    }
+    messages!.addAll(newMessages);
+    setState(() {});
+  }
+
+  /// The method don't need try catch
+  Future _loadPrevMessages() async {
+    var newMessages =
+        await MsgProvider().fetchMessagesTo(prevLoadedMsgTimestamp ?? 0, 40);
+    hasPrevMessages = (messages!.length == 40);
+    if (hasPrevMessages) {
+      prevLoadedMsgTimestamp = messages!.first.time.millisecondsSinceEpoch;
+    }
+    messages!.insertAll(0, newMessages);
     setState(() {});
   }
 
@@ -50,23 +119,21 @@ class _TestChatListState extends State<TestChatList> {
     setState(() {});
   }
 
-  Future _loadMoreMessagesWhileMissLatestMsg() async {
-    messages = await MsgProvider().fetchMessagesWithKey(UnreadMessageKey);
-    hasPrevMessages = true;
-    setState(() {});
-  }
-
   _sendMessage() {
-    if (inputMsgController.text.isNotEmpty) {
-      // if (messages.isNotEmpty) {
-      //   listViewController.sliverController.jumpToIndex(0);
-      // }
-      messages ??= [];
-      setState(() {
-        MsgProvider().insertSendMessage(messages!, inputMsgController.text);
-      });
+    try {
+      if (inputMsgController.text.isNotEmpty) {
+        // if (messages.isNotEmpty) {
+        //   listViewController.sliverController.jumpToIndex(0);
+        // }
+        messages ??= [];
+        setState(() {
+          MsgProvider().insertSendMessage(messages!, inputMsgController.text);
+        });
 
-      inputMsgController.text = "";
+        inputMsgController.text = "";
+      }
+    } catch (e, s) {
+      EasyLoading.showError(e.toString());
     }
   }
 
@@ -212,7 +279,7 @@ class _TestChatListState extends State<TestChatList> {
     }
   }
 
-  _renderList() {
+  Widget _renderList() {
     return ChatList(
         messageCount: messages?.length ?? 0,
         itemBuilder: (BuildContext context, int index) => _renderItem(index),
@@ -228,11 +295,7 @@ class _TestChatListState extends State<TestChatList> {
         showScrollToTop: true,
         offsetToShowScrollToTop: 400.0,
         scrollToTopBuilder: _renderScrollToTop,
-        loadTopMessagesWhenJumpToTop: () async {
-          messages = await MsgProvider().fetchMessages();
-          hasPrevMessages = false;
-          setState(() {});
-        },
+        loadTopMessagesWhenJumpToTop: _loadTopMessagesWhenJumpToTop,
 
         // Last read message
         showLastReadMessageButton: true,
@@ -245,27 +308,13 @@ class _TestChatListState extends State<TestChatList> {
         hasMoreNextMessages: hasMoreMessages,
         loadNextMessageOffset: 10,
         loadPrevWidgetBuilder: _renderRefreshWidget,
-        loadNextMessages: () async {
-          var newMessages = await MsgProvider().fetchMessages();
-          messages!.addAll(newMessages);
-          if (messages!.length > 200) {
-            hasMoreMessages = false;
-          }
-          setState(() {});
-        },
+        loadNextMessages: _loadMoreMessages,
 
         // Refresh
         hasMorePrevMessages: hasPrevMessages,
         loadPrevMessageOffset: 100,
         loadNextWidgetBuilder: _renderLoadWidget,
-        loadPrevMessages: () async {
-          var newMessages = await MsgProvider().fetchMessages();
-          messages!.insertAll(0, newMessages);
-          if (messages!.length > 200) {
-            hasPrevMessages = false;
-          }
-          setState(() {});
-        });
+        loadPrevMessages: _loadPrevMessages);
   }
 
   @override

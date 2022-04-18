@@ -5,10 +5,13 @@ import 'package:english_words/english_words.dart';
 import 'package:uuid/uuid.dart';
 
 class MsgProvider {
-  Future<List<MsgModel>> fetchMessages() async {
+  /// Loading [count] messages from [fromTimestamp]
+  /// The statement should be time >=[fromTimestamp] order by time asc
+  /// The list order by time by asc
+  Future<List<MsgModel>> fetchMessagesFrom(int fromTimestamp, int count) async {
     await Future.delayed(const Duration(milliseconds: 1000));
     List<MsgModel> messages = [];
-    for (var i = 0; i < 50; i++) {
+    for (var i = 0; i < count; i++) {
       if (i != 9) {
         var msg = generateWordPairs().take(Random().nextInt(10)).toString();
         if (Random().nextInt(10) % 2 == 0) {
@@ -22,6 +25,78 @@ class MsgProvider {
     }
 
     return messages;
+  }
+
+  /// Loading [count] messages to [toTimestamp]
+  /// There is difference from [fetchMessagesFrom], fetch record condition should be
+  /// time <=[toTimestamp] order by time desc
+  /// No matter query table by desc, The result value must order with time by asc
+  Future<List<MsgModel>> fetchMessagesTo(int toTimestamp, int count) async {
+    await Future.delayed(const Duration(milliseconds: 1000));
+    List<MsgModel> messages = [];
+    for (var i = 0; i < count; i++) {
+      if (i != 9) {
+        var msg = generateWordPairs().take(Random().nextInt(10)).toString();
+        if (Random().nextInt(10) % 2 == 0) {
+          insertReceiveMessage(messages, msg * (Random().nextInt(2) + 1));
+        } else {
+          insertSendMessage(messages, msg * (Random().nextInt(2) + 1));
+        }
+      } else {
+        insertReceiveMessage(messages, "Last readed message");
+      }
+    }
+
+    return messages;
+  }
+
+  /// When jump to specify key message, but the message not exist.
+  /// We should load messages from providers
+  /// The result value must order with time by asc
+  Future<List<MsgModel>> fetchMessagesAroundKey(String msgId, int count) async {
+    List<MsgModel> messages = [];
+    var curMsg =
+        insertReceiveMessage(messages, "Last readed message", key: msgId);
+    // Get prev 10 message
+    var prevMessages =
+        await fetchMessagesTo(curMsg.time.millisecondsSinceEpoch, 60);
+    var nextMessages =
+        await fetchMessagesFrom(curMsg.time.millisecondsSinceEpoch, 10);
+
+    var result = mergeAndRemoveDuplicateMsgs(prevMessages, [curMsg]);
+    result = mergeAndRemoveDuplicateMsgs(result, nextMessages);
+    result.sort(((a, b) =>
+        a.time.millisecondsSinceEpoch - b.time.millisecondsSinceEpoch));
+    var newResult = <MsgModel>[];
+    // Fetch [count] item from tail to top
+    for (var i = result.length - 1; i >= 0; i--) {
+      newResult.insert(0, result[i]);
+      if (newResult.length == count) break;
+    }
+
+    return newResult;
+  }
+
+  /// Merge message, remove duplicate record
+  List<MsgModel> mergeAndRemoveDuplicateMsgs(
+      List<MsgModel> msg1s, List<MsgModel> msg2s) {
+    // create map
+    var msgMaps = <String, MsgModel>{};
+    var result = <MsgModel>[];
+    for (var msg1 in msg1s) {
+      if (msgMaps[msg1.id] == null) {
+        msgMaps[msg1.id] = msg1;
+        result.add(msg1);
+      }
+    }
+    for (var msg2 in msg2s) {
+      if (msgMaps[msg2.id] == null) {
+        msgMaps[msg2.id] = msg2;
+        result.add(msg2);
+      }
+    }
+
+    return result;
   }
 
   Future<List<MsgModel>> fetchMessagesWithKey(String key) async {
