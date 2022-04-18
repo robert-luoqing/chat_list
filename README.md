@@ -1,15 +1,77 @@
-## Flutter List View
+## Chat List
 
-Enhance list view to support scroll to index, jump to index, header sticky, enable without scroll when insert data on top and turn performance to reused items.
+Chat list library is based on flutter list view library to implement full chat list functionality.
 
 ## Features
 
-1. Support the list view to jump to and scroll to index.
-2. Support for inserting data without scrolling  
-3. Support for show top in reverse mode if the data can't fill the full viewport.
-4. Support sticky header.
-5. Support integrated pull_to_refresh
-6. When initializing data, allow for scrolling to specify an index.
-7. To save performance, flutter list_view always reuses the rendered item.
-8. Support to keep specifying items without reusing and disposing of them once the item is created.
+1. Support loading more and loading previous messages.
+2. Support keeping scroll position when user scroll to other position to read messages.  
+3. Support scrolling to unread message.
+4. Support detecting receive message and tip new received messages
+5. Support timetag in messages
+6. Support load fragment messages and infine load prev messages
 
+## Screen
+![](screen/message.png)
+
+## Example
+```dart
+Widget _renderList() {
+  return ChatList(
+    messageCount: messages?.length ?? 0,
+    itemBuilder: (BuildContext context, int index) => _renderItem(index),
+    onMessageKey: (int index) => messages![index].id,
+    controller: chatListController,
+    // New message tip
+    showNewMessageComingButton: true,
+    onIsReceiveMessage: (int i) => messages![i].type == MsgType.receive,
+
+    // Scroll to top
+    showScrollToTop: true,
+  );
+}
+```
+More complex example
+```dart
+Widget _renderList() {
+  return ChatList(
+    messageCount: messages?.length ?? 0,
+    itemBuilder: (BuildContext context, int index) => _renderItem(index),
+    onMessageKey: (int index) => messages![index].id,
+    controller: chatListController,
+    // New message tip
+    showNewMessageComingButton: true,
+    newMessageComingButtonPosition: const Position(right: 0, bottom: 20),
+    // newMessageComingButtonBuilder: defaultNewMessageComingButtonBuilder,
+    onIsReceiveMessage: (int i) => messages![i].type == MsgType.receive,
+
+    // Scroll to top
+    showScrollToTop: true,
+    offsetToShowScrollToTop: 400.0,
+    // scrollToTopBuilder: defaultScrollToTopBuilder,
+    loadTopMessagesWhenJumpToTop: _loadTopMessagesWhenJumpToTop,
+
+    // Last read message
+    showLastReadMessageButton: true,
+    latestReadMessageKey: latestMessageKey,
+    latestUnreadMsgCount: unreadMsgCount,
+    lastReadMessageButtonPosition: const Position(right: 0, top: 20),
+    loadMoreMessagesWhileMissLatestMsg: _loadMoreMessagesWhileMissLatestMsg,
+    lastUnreadMsgOffsetFromTop: 50,
+    // lastReadMessageButtonBuilder: defaultLastReadMessageButtonBuilder,
+
+    // Refresh
+    hasMorePrevMessages: hasPrevMessages,
+    loadPrevMessageOffset: 100,
+    loadPrevWidgetBuilder: defaultLoadPrevWidgetBuilder,
+    loadPrevMessages: _loadPrevMessages,
+
+    // Load more
+    hasMoreNextMessages: hasMoreMessages,
+    loadNextMessageOffset: 10,
+    loadNextWidgetBuilder: defaultLoadNextWidgetBuilder,
+    loadNextMessages: _loadMoreMessages,
+  );
+}
+
+```
