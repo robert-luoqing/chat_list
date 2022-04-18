@@ -38,6 +38,9 @@ dependencies:
     path: ../
   uuid: ^3.0.4
   english_words: ^4.0.0
+  flutter_easyloading: ^3.0.3
+  date_format: ^2.0.6
+  flutter_chat_bubble: ^2.0.0
 
 dev_dependencies:
   flutter_test:

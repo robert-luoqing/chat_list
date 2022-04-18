@@ -1,6 +1,7 @@
 import 'home.dart';
 import 'package:flutter/widgets.dart';
 
+import 'simple_chat_list.dart';
 import 'test_chat_list.dart';
 
 class SectionViewRoute {
@@ -14,5 +15,6 @@ class SectionViewRoute {
           ],
         ),
     "/testChatList": (context) => const TestChatList(),
+    "/simpleChatList": (context) => const SimpleChatList(),
   };
 }
