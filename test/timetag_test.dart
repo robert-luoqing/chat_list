@@ -1,4 +1,4 @@
-import 'package:chat_list/src/step_timetag_util.dart';
+import 'package:flutter_chat_list/src/step_timetag_util.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class MsgTestModel {

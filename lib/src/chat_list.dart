@@ -15,103 +15,103 @@ const constLargeUnreadIndex = 100000000000;
 class ChatList extends StatefulWidget {
   const ChatList({
     Key? key,
-    this.messageCount = 0,
-    required this.onMessageKey,
+    this.msgCount = 0,
+    required this.onMsgKey,
     required this.itemBuilder,
-    this.latestReadMessageKey,
-    this.showLastReadMessageButton = true,
-    this.latestUnreadMsgCount = 0,
-    this.lastReadMessageButtonPosition = const Position(right: 0, top: 20),
-    this.lastReadMessageButtonBuilder,
-    this.lastReadMessageTipBuilder,
-    this.loadMoreMessagesWhileMissLatestMsg,
-    this.lastUnreadMsgOffsetFromTop = 50,
-    this.hasMoreNextMessages = false,
-    this.hasMorePrevMessages = false,
-    this.loadNextMessageOffset,
-    this.loadPrevMessageOffset,
-    this.loadNextMessages,
-    this.loadPrevMessages,
-    this.loadNextWidgetBuilder,
-    this.loadPrevWidgetBuilder,
-    this.showNewMessageComingButton = true,
-    this.newMessageComingButtonPosition = const Position(right: 0, bottom: 20),
-    this.newMessageComingButtonBuilder,
+    this.latestReadMsgKey,
+    this.showUnreadMsgButton = true,
+    this.unreadMsgCount = 0,
+    this.unreadMsgButtonPosition = const Position(right: 0, top: 20),
+    this.unreadMsgButtonBuilder,
+    this.unreadMsgTipBuilder,
+    this.onLoadMsgsByLatestReadMsgKey,
+    this.offsetFromUnreadTipToTop = 50,
+    this.hasMoreMsgs = false,
+    this.hasPrevMsgs = false,
+    this.offsetToTriggerLoadMore,
+    this.offsetToTriggerLoadPrev,
+    this.onLoadMoreMsgs,
+    this.onLoadPrevMsgs,
+    this.loadMoreProgressBuilder,
+    this.loadPrevProgressBuilder,
+    this.showReceivedMsgButton = true,
+    this.receivedMsgButtonPosition = const Position(right: 0, bottom: 20),
+    this.receivedMsgButtonBuilder,
     this.onIsReceiveMessage,
-    this.showScrollToTop = true,
+    this.showScrollToTopButton = true,
     this.offsetToShowScrollToTop = 400,
-    this.scrollToTopBuilder,
+    this.scrollToTopButtonBuilder,
     this.physics,
     this.scrollBehavior,
-    this.loadTopMessagesWhenJumpToTop,
+    this.onLoadTopMsgs,
     this.controller,
   }) : super(key: key);
 
-  /// [messageCount] is message source
-  /// [onMessageKey] will return the message id
+  /// [msgCount] is message count
+  /// [onMsgKey] will return the message id
   /// [itemBuilder] is build message widget
-  final int messageCount;
-  final String Function(int index) onMessageKey;
+  final int msgCount;
+  final String Function(int index) onMsgKey;
   final Widget Function(BuildContext context, int index) itemBuilder;
 
-  /// [latestReadMessageKey] is the messages last readed
+  /// [latestReadMsgKey] is the messages last readed
   /// null will be all message is readed
   /// If the latestReadMessage is in [messages], It mean it should be in current view
   /// else it will be not in list.
   /// Does the widget show last message tip. Click it will jump to last message
   /// But if the last messages is not in current source.
-  /// [lastReadMessageButtonBuilder] is used to build the button should "Scroll to latest read message"
-  /// [lastReadMessageTipBuilder] is used to build the tip like "-------------latest read-------------"
-  /// [loadMoreMessagesWhileMissLatestMsg] if latestReadMessageKey in [messages]. just jump to to message.
-  /// If it is not in [messages], [loadMoreMessagesWhileMissLatestMsg] will invoke to load. After load, it will also jump to the latest message
-  /// When user click scroll to latest unread message. The widget will scroll to the unread item to top by [lastUnreadMsgOffsetFromTop] offset
-  final String? latestReadMessageKey;
-  final bool showLastReadMessageButton;
-  final Position lastReadMessageButtonPosition;
-  final int latestUnreadMsgCount;
-  final Widget Function(BuildContext context, int unreadMsgCount)?
-      lastReadMessageButtonBuilder;
-  final Widget Function(BuildContext context, int unreadMsgCount)?
-      lastReadMessageTipBuilder;
-  final Future Function()? loadMoreMessagesWhileMissLatestMsg;
-  final double lastUnreadMsgOffsetFromTop;
+  /// [unreadMsgButtonBuilder] is used to build the button should "Scroll to latest read message"
+  /// [unreadMsgTipBuilder] is used to build the tip like "-------------latest read-------------"
+  /// [onLoadMsgsByLatestReadMsgKey] if latestReadMessageKey in [messages]. just jump to to message.
+  /// If it is not in [messages], [onLoadMsgsByLatestReadMsgKey] will invoke to load. After load, it will also jump to the latest message
+  /// When user click scroll to latest unread message. The widget will scroll to the unread item to top by [offsetFromUnreadTipToTop] offset
+  final String? latestReadMsgKey;
+  final bool showUnreadMsgButton;
+  final Position unreadMsgButtonPosition;
+  final int unreadMsgCount;
+  final Widget Function(BuildContext context, int unreadCount)?
+      unreadMsgButtonBuilder;
+  final Widget Function(BuildContext context, int unreadCount)?
+      unreadMsgTipBuilder;
+  final Future Function()? onLoadMsgsByLatestReadMsgKey;
+  final double offsetFromUnreadTipToTop;
 
-  /// [hasMoreNextMessages] is used to tell widget there are more messages need load in scroll to end
-  /// [loadNextMessageOffset] is used to tell widget when scroll offset is reach to end by loadNextMessageOffset,
-  /// [loadNextMessages] function will invoke, null or 0 will not enable automatically invoke load function
-  final bool hasMoreNextMessages;
-  final double? loadNextMessageOffset;
-  final Future Function()? loadNextMessages;
+  /// [hasMoreMsgs] is used to tell widget there are more messages need load in scroll to end
+  /// [offsetToTriggerLoadMore] is used to tell widget when scroll offset is reach to end by loadNextMessageOffset,
+  /// [onLoadMoreMsgs] function will invoke, null or 0 will not enable automatically invoke load function
+  final bool hasMoreMsgs;
+  final double? offsetToTriggerLoadMore;
+  final Future Function()? onLoadMoreMsgs;
   final Widget Function(BuildContext context, LoadStatus? status)?
-      loadNextWidgetBuilder;
+      loadMoreProgressBuilder;
 
   /// Loadmore in end and loadmore in header
-  /// [hasMorePrevMessages] is used to tell widget there are more messages need load when scroll to first item
-  /// [loadPrevMessageOffset] is used to tell widget when scroll offset is reach to first item by loadPrevMessageOffset,
-  /// [loadPrevMessages] function will invoke, null or 0 will not enable automatically invoke load function
-  final bool hasMorePrevMessages;
-  final double? loadPrevMessageOffset;
-  final Future Function()? loadPrevMessages;
+  /// [hasPrevMsgs] is used to tell widget there are more messages need load when scroll to first item
+  /// [offsetToTriggerLoadPrev] is used to tell widget when scroll offset is reach to first item by loadPrevMessageOffset,
+  /// [onLoadPrevMsgs] function will invoke, null or 0 will not enable automatically invoke load function
+  final bool hasPrevMsgs;
+  final double? offsetToTriggerLoadPrev;
+  final Future Function()? onLoadPrevMsgs;
   final Widget Function(BuildContext context, RefreshStatus? status)?
-      loadPrevWidgetBuilder;
+      loadPrevProgressBuilder;
 
   /// The scroll is not in top while user read messages, in this time, new message coming, Does it need should new message coming button
   /// [onIsReceiveMessage] Does it is received message, not send or tip message
-  final bool showNewMessageComingButton;
-  final Position newMessageComingButtonPosition;
+  final bool showReceivedMsgButton;
+  final Position receivedMsgButtonPosition;
   final Widget Function(BuildContext context, int newCount)?
-      newMessageComingButtonBuilder;
+      receivedMsgButtonBuilder;
   final bool Function(int index)? onIsReceiveMessage;
 
-  /// [showScrollToTop] is true will determine show the scroll to top button
+  /// [showScrollToTopButton] is true will determine show the scroll to top button
   /// when scroll offset > [offsetToShowScrollToTop], the button will be show up
-  final bool showScrollToTop;
+  final bool showScrollToTopButton;
   final double offsetToShowScrollToTop;
-  final Widget Function(BuildContext context)? scrollToTopBuilder;
+  final Widget Function(BuildContext context)? scrollToTopButtonBuilder;
 
-  /// When jump to top, library will detect whether the [hasMorePrevMessages] is true,
-  /// If the value is true, invoke [loadTopMessagesWhenJumpToTop] to load first screen messages
-  final Future Function()? loadTopMessagesWhenJumpToTop;
+  /// When jump to top, library will detect whether the [hasPrevMsgs] is true,
+  /// If the value is true, invoke [onLoadTopMsgs] to load first screen messages
+  final Future Function()? onLoadTopMsgs;
 
   final ChatListController? controller;
 
@@ -152,13 +152,13 @@ class ChatListState extends State<ChatList> {
   /// New message first key
   /// When reach new message, the count will be disppear
   /// For example if new message [{id: 1},{id:2},{id:3}], the key should be 1
-  /// if [hasMorePrevMessages] is true, widget can calc the count, we need simple increase [newMsgCount]
+  /// if [hasPrevMsgs] is true, widget can calc the count, we need simple increase [newMsgCount]
   notifyNewMessageComing(String firstKey, int newMsgCount) {
     _handleNewMessageComing(firstKey, newMsgCount);
   }
 
   _handleLastMessageButton(bool forceToInitToTrue) {
-    if (widget.showLastReadMessageButton && lastReadMessageKey != null) {
+    if (widget.showUnreadMsgButton && lastReadMessageKey != null) {
       WidgetsBinding.instance?.addPostFrameCallback((timeStamp) {
         latestUnreadMessageIndex = constLargeUnreadIndex;
         var newUnreadMessageIndex = _getLatestUnReadMessageIndex();
@@ -181,8 +181,8 @@ class ChatListState extends State<ChatList> {
   }
 
   int? _getLatestUnReadMessageIndex() {
-    for (var i = 0; i < widget.messageCount; i++) {
-      if (widget.onMessageKey(i) == lastReadMessageKey) {
+    for (var i = 0; i < widget.msgCount; i++) {
+      if (widget.onMsgKey(i) == lastReadMessageKey) {
         // 是last message index的前一个
         return i > 0 ? i - 1 : 0;
       }
@@ -192,7 +192,7 @@ class ChatListState extends State<ChatList> {
   }
 
   _determineShowLatestUnreadMsgButton() {
-    if (widget.showLastReadMessageButton && itemPositions.isNotEmpty) {
+    if (widget.showUnreadMsgButton && itemPositions.isNotEmpty) {
       if (latestUnreadMessageIndex == null ||
           itemPositions.last.index >= latestUnreadMessageIndex!) {
         lastReadMessageKey = null;
@@ -205,7 +205,7 @@ class ChatListState extends State<ChatList> {
   }
 
   _handleNewMessageComing(String? firstKey, int? newMsgCountInThisTime) {
-    if (widget.showNewMessageComingButton) {
+    if (widget.showReceivedMsgButton) {
       // Next round to set key
       WidgetsBinding.instance?.addPostFrameCallback((timeStamp) {
         if (firstKey != null) {
@@ -214,7 +214,7 @@ class ChatListState extends State<ChatList> {
 
         if (firstNewMessageKey != null) {
           int newMsgCount = 0;
-          if (widget.hasMorePrevMessages) {
+          if (widget.hasPrevMsgs) {
             if (newMsgCountInThisTime != null) {
               newMsgCount = newMessageCount.value + newMsgCountInThisTime;
             } else {
@@ -222,20 +222,20 @@ class ChatListState extends State<ChatList> {
             }
 
             firstNewMessageIndex = -1;
-            for (var i = 0; i < widget.messageCount; i++) {
-              if (widget.onMessageKey(i) == firstNewMessageKey) {
+            for (var i = 0; i < widget.msgCount; i++) {
+              if (widget.onMsgKey(i) == firstNewMessageKey) {
                 firstNewMessageIndex = i;
                 break;
               }
             }
           } else {
             firstNewMessageIndex = null;
-            for (var i = 0; i < widget.messageCount; i++) {
+            for (var i = 0; i < widget.msgCount; i++) {
               if (widget.onIsReceiveMessage == null ||
                   widget.onIsReceiveMessage!(i)) {
                 newMsgCount++;
 
-                if (widget.onMessageKey(i) == firstNewMessageKey) {
+                if (widget.onMsgKey(i) == firstNewMessageKey) {
                   firstNewMessageIndex = i;
                   break;
                 }
@@ -257,7 +257,7 @@ class ChatListState extends State<ChatList> {
   }
 
   _determineShowNewMsgCount() {
-    if (widget.showNewMessageComingButton && itemPositions.isNotEmpty) {
+    if (widget.showReceivedMsgButton && itemPositions.isNotEmpty) {
       if (firstNewMessageIndex == null ||
           itemPositions[0].index <= firstNewMessageIndex!) {
         if (newMessageCount.value != 0) {
@@ -274,10 +274,10 @@ class ChatListState extends State<ChatList> {
     ScrollPosition position = listViewController.position;
     var maxScrollExtent = position.maxScrollExtent;
 
-    var loadNextMessageOffset = widget.loadNextMessageOffset ?? 0;
+    var loadNextMessageOffset = widget.offsetToTriggerLoadMore ?? 0;
     var targetNextOffset = maxScrollExtent - loadNextMessageOffset;
 
-    if (widget.hasMoreNextMessages && loadNextMessageOffset > 0.0) {
+    if (widget.hasMoreMsgs && loadNextMessageOffset > 0.0) {
       if (offset >= targetNextOffset &&
           nextBottomScrollOffset < targetNextOffset) {
         if (!refreshController.isLoading) {
@@ -289,8 +289,8 @@ class ChatListState extends State<ChatList> {
     nextBottomScrollOffset = offset;
 
     /// Handle trigger load prev
-    final torrentDistance = widget.loadPrevMessageOffset ?? 0.0;
-    if (widget.hasMorePrevMessages && torrentDistance > 0.0) {
+    final torrentDistance = widget.offsetToTriggerLoadPrev ?? 0.0;
+    if (widget.hasPrevMsgs && torrentDistance > 0.0) {
       if (offset <= torrentDistance && prevScrollOffset > torrentDistance) {
         if (!refreshController.isRefresh) {
           refreshController.requestRefresh();
@@ -319,7 +319,7 @@ class ChatListState extends State<ChatList> {
     listViewController.addListener(_handleScrolling);
 
     widget.controller?.mount(this);
-    lastReadMessageKey = widget.latestReadMessageKey;
+    lastReadMessageKey = widget.latestReadMsgKey;
     _handleLastMessageButton(true);
     super.initState();
   }
@@ -331,8 +331,8 @@ class ChatListState extends State<ChatList> {
     if (firstNewMessageKey != null) {
       _handleNewMessageComing(null, null);
     }
-    if (oldWidget.latestReadMessageKey != widget.latestReadMessageKey) {
-      lastReadMessageKey = widget.latestReadMessageKey;
+    if (oldWidget.latestReadMsgKey != widget.latestReadMsgKey) {
+      lastReadMessageKey = widget.latestReadMsgKey;
       _handleLastMessageButton(true);
     } else {
       _handleLastMessageButton(false);
@@ -341,8 +341,8 @@ class ChatListState extends State<ChatList> {
 
   Future _onLoading() async {
     try {
-      if (widget.loadNextMessages != null) {
-        await widget.loadNextMessages!();
+      if (widget.onLoadMoreMsgs != null) {
+        await widget.onLoadMoreMsgs!();
       }
 
       refreshController.loadComplete();
@@ -357,8 +357,8 @@ class ChatListState extends State<ChatList> {
     setState(() {});
 
     try {
-      if (widget.loadPrevMessages != null) {
-        await widget.loadPrevMessages!();
+      if (widget.onLoadPrevMsgs != null) {
+        await widget.onLoadPrevMsgs!();
       }
 
       refreshController.refreshCompleted();
@@ -378,10 +378,10 @@ class ChatListState extends State<ChatList> {
   }
 
   Future _scrollToTop() async {
-    if (widget.hasMorePrevMessages) {
-      if (widget.loadTopMessagesWhenJumpToTop != null) {
-        await widget.loadTopMessagesWhenJumpToTop!();
-        await Future.delayed(const Duration(milliseconds: 30));
+    if (widget.hasPrevMsgs) {
+      if (widget.onLoadTopMsgs != null) {
+        await widget.onLoadTopMsgs!();
+        await Future.delayed(const Duration(milliseconds: 50));
       }
     }
     listViewController.sliverController.animateToIndex(0,
@@ -397,11 +397,11 @@ class ChatListState extends State<ChatList> {
             duration: const Duration(milliseconds: 200),
             curve: Curves.bounceInOut,
             offsetBasedOnBottom: true,
-            offset: widget.lastUnreadMsgOffsetFromTop);
+            offset: widget.offsetFromUnreadTipToTop);
         clearData = true;
       } else {
-        if (widget.loadMoreMessagesWhileMissLatestMsg != null) {
-          await widget.loadMoreMessagesWhileMissLatestMsg!();
+        if (widget.onLoadMsgsByLatestReadMsgKey != null) {
+          await widget.onLoadMsgsByLatestReadMsgKey!();
           WidgetsBinding.instance?.addPostFrameCallback((timeStamp) {
             var newUnreadMessageIndex = _getLatestUnReadMessageIndex();
             if (constLargeUnreadIndex != newUnreadMessageIndex &&
@@ -411,7 +411,7 @@ class ChatListState extends State<ChatList> {
                   duration: const Duration(milliseconds: 200),
                   curve: Curves.bounceInOut,
                   offsetBasedOnBottom: true,
-                  offset: widget.lastUnreadMsgOffsetFromTop);
+                  offset: widget.offsetFromUnreadTipToTop);
             }
 
             lastReadMessageKey = null;
@@ -436,15 +436,14 @@ class ChatListState extends State<ChatList> {
   }
 
   Widget _renderItem(BuildContext context, int index) {
-    if (widget.onMessageKey(index) == widget.latestReadMessageKey) {
+    if (widget.onMsgKey(index) == widget.latestReadMsgKey) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           widget.itemBuilder(context, index),
-          widget.lastReadMessageTipBuilder != null
-              ? widget.lastReadMessageTipBuilder!(
-                  context, widget.latestUnreadMsgCount)
-              : defaultLastReadMessageTipBuilder(context, index)
+          widget.unreadMsgTipBuilder != null
+              ? widget.unreadMsgTipBuilder!(context, widget.unreadMsgCount)
+              : defaultUnreadMsgTipBuilder(context, index)
         ],
       );
     }
@@ -458,18 +457,18 @@ class ChatListState extends State<ChatList> {
         PointerDeviceKind.mouse,
       }),
       child: SmartRefresher(
-          enablePullDown: widget.hasMorePrevMessages,
-          enablePullUp: widget.hasMoreNextMessages,
+          enablePullDown: widget.hasPrevMsgs,
+          enablePullUp: widget.hasMoreMsgs,
           header: CustomHeader(
             completeDuration: const Duration(milliseconds: 0),
-            builder: (context, mode) => widget.loadPrevWidgetBuilder != null
-                ? widget.loadPrevWidgetBuilder!(context, mode)
-                : defaultLoadPrevWidgetBuilder(context, mode),
+            builder: (context, mode) => widget.loadPrevProgressBuilder != null
+                ? widget.loadPrevProgressBuilder!(context, mode)
+                : defaultLoadPrevProgressBuilder(context, mode),
           ),
           footer: CustomFooter(
-            builder: (context, mode) => widget.loadNextWidgetBuilder != null
-                ? widget.loadNextWidgetBuilder!(context, mode)
-                : defaultLoadNextWidgetBuilder(context, mode),
+            builder: (context, mode) => widget.loadMoreProgressBuilder != null
+                ? widget.loadMoreProgressBuilder!(context, mode)
+                : defaultLoadMoreProgressBuilder(context, mode),
           ),
           controller: refreshController,
           onRefresh: _onRefresh,
@@ -480,8 +479,8 @@ class ChatListState extends State<ChatList> {
               physics: widget.physics,
               scrollBehavior: widget.scrollBehavior,
               delegate: FlutterListViewDelegate(_renderItem,
-                  childCount: widget.messageCount,
-                  onItemKey: (index) => widget.onMessageKey(index),
+                  childCount: widget.msgCount,
+                  onItemKey: (index) => widget.onMsgKey(index),
                   keepPosition: true,
                   keepPositionOffset: keepPositionOffset,
                   initIndex: initIndex,
@@ -495,14 +494,14 @@ class ChatListState extends State<ChatList> {
     return ValueListenableBuilder(
         valueListenable: showLastUnreadButton,
         builder: (context, bool showButton, child) {
-          if (widget.showLastReadMessageButton && showButton) {
+          if (widget.showUnreadMsgButton && showButton) {
             return GestureDetector(
               onTap: _scrollToLatestReadMessage,
-              child: widget.lastReadMessageButtonBuilder != null
-                  ? widget.lastReadMessageButtonBuilder!(
-                      context, widget.latestUnreadMsgCount)
-                  : defaultLastReadMessageButtonBuilder(
-                      context, widget.latestUnreadMsgCount),
+              child: widget.unreadMsgButtonBuilder != null
+                  ? widget.unreadMsgButtonBuilder!(
+                      context, widget.unreadMsgCount)
+                  : defaultUnreadMsgButtonBuilder(
+                      context, widget.unreadMsgCount),
             );
           }
           return Container();
@@ -518,13 +517,13 @@ class ChatListState extends State<ChatList> {
           Widget? renderWidget;
 
           if (newMsgCount > 0) {
-            if (widget.showNewMessageComingButton) {
+            if (widget.showReceivedMsgButton) {
               renderWidget = _renderNewMessagesButton(newMsgCount);
             }
           }
 
           if (renderWidget == null && showTop) {
-            if (widget.showScrollToTop) {
+            if (widget.showScrollToTopButton) {
               renderWidget = _renderScrollToTop();
             }
           }
@@ -539,18 +538,18 @@ class ChatListState extends State<ChatList> {
   Widget _renderNewMessagesButton(int newMsgCount) {
     return GestureDetector(
       onTap: _scrollToTop,
-      child: widget.newMessageComingButtonBuilder != null
-          ? widget.newMessageComingButtonBuilder!(context, newMsgCount)
-          : defaultNewMessageComingButtonBuilder(context, newMsgCount),
+      child: widget.receivedMsgButtonBuilder != null
+          ? widget.receivedMsgButtonBuilder!(context, newMsgCount)
+          : defaultReceivedMsgButtonBuilder(context, newMsgCount),
     );
   }
 
   Widget _renderScrollToTop() {
     return GestureDetector(
       onTap: _scrollToTop,
-      child: widget.scrollToTopBuilder != null
-          ? widget.scrollToTopBuilder!(context)
-          : defaultScrollToTopBuilder(context),
+      child: widget.scrollToTopButtonBuilder != null
+          ? widget.scrollToTopButtonBuilder!(context)
+          : defaultScrollToTopButtonBuilder(context),
     );
   }
 
@@ -559,16 +558,16 @@ class ChatListState extends State<ChatList> {
     return Stack(children: [
       Positioned(top: 0, left: 0, right: 0, bottom: 0, child: _renderList()),
       Positioned(
-          top: widget.lastReadMessageButtonPosition.top,
-          left: widget.lastReadMessageButtonPosition.left,
-          right: widget.lastReadMessageButtonPosition.right,
-          bottom: widget.lastReadMessageButtonPosition.bottom,
+          top: widget.unreadMsgButtonPosition.top,
+          left: widget.unreadMsgButtonPosition.left,
+          right: widget.unreadMsgButtonPosition.right,
+          bottom: widget.unreadMsgButtonPosition.bottom,
           child: _renderLastReadButton()),
       Positioned(
-          top: widget.newMessageComingButtonPosition.top,
-          left: widget.newMessageComingButtonPosition.left,
-          right: widget.newMessageComingButtonPosition.right,
-          bottom: widget.newMessageComingButtonPosition.bottom,
+          top: widget.receivedMsgButtonPosition.top,
+          left: widget.receivedMsgButtonPosition.left,
+          right: widget.receivedMsgButtonPosition.right,
+          bottom: widget.receivedMsgButtonPosition.bottom,
           child: _renderNewMessagesButtonOrScrollToTop()),
     ]);
   }

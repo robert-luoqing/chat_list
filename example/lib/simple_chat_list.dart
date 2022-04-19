@@ -1,4 +1,4 @@
-import 'package:chat_list/chat_list.dart';
+import 'package:flutter_chat_list/chat_list.dart';
 import 'package:chat_list_example/msg_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
@@ -96,16 +96,16 @@ class _SimpleChatListState extends State<SimpleChatList> {
 
   Widget _renderList() {
     return ChatList(
-      messageCount: messages?.length ?? 0,
+      msgCount: messages?.length ?? 0,
       itemBuilder: (BuildContext context, int index) => _renderItem(index),
-      onMessageKey: (int index) => messages![index].id,
+      onMsgKey: (int index) => messages![index].id,
       controller: chatListController,
       // New message tip
-      showNewMessageComingButton: true,
+      showReceivedMsgButton: true,
       onIsReceiveMessage: (int i) => messages![i].type == MsgType.receive,
 
       // Scroll to top
-      showScrollToTop: true,
+      showScrollToTopButton: true,
     );
   }
 

@@ -29,21 +29,19 @@ Widget _floatContainer(String text) {
   );
 }
 
-Widget defaultLastReadMessageButtonBuilder(
-    BuildContext context, int unreadMsgCount) {
+Widget defaultUnreadMsgButtonBuilder(BuildContext context, int unreadMsgCount) {
   return _floatContainer("$unreadMsgCount new messages");
 }
 
-Widget defaultNewMessageComingButtonBuilder(
-    BuildContext context, int newMsgCount) {
+Widget defaultReceivedMsgButtonBuilder(BuildContext context, int newMsgCount) {
   return _floatContainer("Received $newMsgCount messages");
 }
 
-Widget defaultScrollToTopBuilder(BuildContext context) {
+Widget defaultScrollToTopButtonBuilder(BuildContext context) {
   return _floatContainer("Scroll to top");
 }
 
-Widget defaultLoadNextWidgetBuilder(BuildContext context, LoadStatus? mode) {
+Widget defaultLoadMoreProgressBuilder(BuildContext context, LoadStatus? mode) {
   Widget body;
   if (mode == LoadStatus.idle) {
     body = const Text("Pull down to load more message");
@@ -62,7 +60,8 @@ Widget defaultLoadNextWidgetBuilder(BuildContext context, LoadStatus? mode) {
   );
 }
 
-Widget defaultLoadPrevWidgetBuilder(BuildContext context, RefreshStatus? mode) {
+Widget defaultLoadPrevProgressBuilder(
+    BuildContext context, RefreshStatus? mode) {
   Widget body;
   if (mode == RefreshStatus.idle) {
     body = const Text("Pull up load prev msg");
@@ -89,7 +88,6 @@ Widget defaultLoadPrevWidgetBuilder(BuildContext context, RefreshStatus? mode) {
   }
 }
 
-Widget defaultLastReadMessageTipBuilder(
-    BuildContext context, int unreadMsgCount) {
+Widget defaultUnreadMsgTipBuilder(BuildContext context, int unreadMsgCount) {
   return const Center(child: Text("---------Latest read--------"));
 }
