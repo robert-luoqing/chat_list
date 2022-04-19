@@ -12,7 +12,10 @@ Chat list library is based on flutter list view library to implement full chat l
 6. Support load fragment messages and infine load prev messages
 
 ## Screen
-![](screen/message.png)
+|  |  |
+| :-----:| :----: |
+| ![](screen/message.png) | ![](screen/message2.png) |
+
 
 ## Example
 ```dart
