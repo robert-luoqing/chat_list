@@ -18,16 +18,16 @@ Chat list library is based on flutter list view library to implement full chat l
 ```dart
 Widget _renderList() {
   return ChatList(
-    messageCount: messages?.length ?? 0,
+    msgCount: messages?.length ?? 0,
     itemBuilder: (BuildContext context, int index) => _renderItem(index),
-    onMessageKey: (int index) => messages![index].id,
+    onMsgKey: (int index) => messages![index].id,
     controller: chatListController,
     // New message tip
-    showNewMessageComingButton: true,
+    showReceivedMsgButton: true,
     onIsReceiveMessage: (int i) => messages![i].type == MsgType.receive,
 
     // Scroll to top
-    showScrollToTop: true,
+    showScrollToTopButton: true,
   );
 }
 ```
@@ -35,43 +35,42 @@ More complex example
 ```dart
 Widget _renderList() {
   return ChatList(
-    messageCount: messages?.length ?? 0,
+    msgCount: messages?.length ?? 0,
     itemBuilder: (BuildContext context, int index) => _renderItem(index),
-    onMessageKey: (int index) => messages![index].id,
+    onMsgKey: (int index) => messages![index].id,
     controller: chatListController,
     // New message tip
-    showNewMessageComingButton: true,
-    newMessageComingButtonPosition: const Position(right: 0, bottom: 20),
+    showReceivedMsgButton: true,
+    receivedMsgButtonPosition: const Position(right: 0, bottom: 20),
     // newMessageComingButtonBuilder: defaultNewMessageComingButtonBuilder,
     onIsReceiveMessage: (int i) => messages![i].type == MsgType.receive,
 
     // Scroll to top
-    showScrollToTop: true,
+    showScrollToTopButton: true,
     offsetToShowScrollToTop: 400.0,
     // scrollToTopBuilder: defaultScrollToTopBuilder,
-    loadTopMessagesWhenJumpToTop: _loadTopMessagesWhenJumpToTop,
+    onLoadTopMsgs: _loadTopMessagesWhenJumpToTop,
 
     // Last read message
-    showLastReadMessageButton: true,
-    latestReadMessageKey: latestMessageKey,
-    latestUnreadMsgCount: unreadMsgCount,
-    lastReadMessageButtonPosition: const Position(right: 0, top: 20),
-    loadMoreMessagesWhileMissLatestMsg: _loadMoreMessagesWhileMissLatestMsg,
-    lastUnreadMsgOffsetFromTop: 50,
+    showUnreadMsgButton: true,
+    latestReadMsgKey: latestMessageKey,
+    unreadMsgCount: unreadMsgCount,
+    unreadMsgButtonPosition: const Position(right: 0, top: 20),
+    onLoadMsgsByLatestReadMsgKey: _loadMoreMessagesWhileMissLatestMsg,
+    offsetFromUnreadTipToTop: 50,
     // lastReadMessageButtonBuilder: defaultLastReadMessageButtonBuilder,
 
     // Refresh
-    hasMorePrevMessages: hasPrevMessages,
-    loadPrevMessageOffset: 100,
-    loadPrevWidgetBuilder: defaultLoadPrevWidgetBuilder,
-    loadPrevMessages: _loadPrevMessages,
+    hasPrevMsgs: hasPrevMessages,
+    offsetToTriggerLoadPrev: 100,
+    loadPrevProgressBuilder: defaultLoadPrevProgressBuilder,
+    onLoadPrevMsgs: _loadPrevMessages,
 
     // Load more
-    hasMoreNextMessages: hasMoreMessages,
-    loadNextMessageOffset: 10,
-    loadNextWidgetBuilder: defaultLoadNextWidgetBuilder,
-    loadNextMessages: _loadMoreMessages,
+    hasMoreMsgs: hasMoreMessages,
+    offsetToTriggerLoadMore: 10,
+    loadMoreProgressBuilder: defaultLoadMoreProgressBuilder,
+    onLoadMoreMsgs: _loadMoreMessages,
   );
 }
-
 ```
