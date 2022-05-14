@@ -30,6 +30,11 @@ class _HomePageState extends State<HomePage> {
                   Navigator.of(context).pushNamed("/testChatList");
                 },
                 child: const Text("Test Chat List")),
+            ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pushNamed("/tabviewHost");
+                },
+                child: const Text("Test Tab View Issue")),
           ],
         ),
       ),

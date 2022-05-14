@@ -2,3 +2,6 @@
 * Provide most of chat list functionalities
 ## 1.0.0
 * Renamed properties
+
+## 1.0.2
+* Fixed keep alive issue

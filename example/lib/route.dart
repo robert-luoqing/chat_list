@@ -1,3 +1,5 @@
+import 'package:chat_list_example/tabview_host.dart';
+
 import 'home.dart';
 import 'package:flutter/widgets.dart';
 
@@ -16,5 +18,6 @@ class SectionViewRoute {
         ),
     "/testChatList": (context) => const TestChatList(),
     "/simpleChatList": (context) => const SimpleChatList(),
+    "/tabviewHost":(context) => const TabviewHost()
   };
 }

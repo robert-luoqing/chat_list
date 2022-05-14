@@ -1,6 +1,6 @@
 name: flutter_chat_list
 description: Provide enhanced list view include jump index, keep position etc.
-version: 1.0.0
+version: 1.0.2
 homepage: https://github.com/robert-luoqing/chat_list
 
 environment:
@@ -11,7 +11,7 @@ dependencies:
   flutter:
     sdk: flutter
   pull_to_refresh: ^2.0.0
-  flutter_list_view: ^1.1.11
+  flutter_list_view: ^1.1.15
   # shimmer: ^2.0.0
 
 dev_dependencies:
