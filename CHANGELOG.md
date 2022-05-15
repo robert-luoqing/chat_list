@@ -8,3 +8,6 @@
 
 ## 1.0.3
 * Fixed touch item is incorrect when items can't fill full screen and firstItemAlign is FirstItemAlign.end
+
+## 1.0.5
+* Rewrie keep position logic
