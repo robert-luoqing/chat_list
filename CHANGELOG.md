@@ -10,4 +10,7 @@
 * Fixed touch item is incorrect when items can't fill full screen and firstItemAlign is FirstItemAlign.end
 
 ## 1.0.5
-* Rewrie keep position logic
+* Rewrite keep position logic
+
+## 1.0.6
+* Fixed random scrollposition error when refreshController.requestLoading was invoked. It caused by manually call refreshController.requestLoading(). The error will supress if we pass needMove: false.

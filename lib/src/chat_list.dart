@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_list_view/flutter_list_view.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 
@@ -197,9 +198,12 @@ class ChatListState extends State<ChatList> {
           itemPositions.last.index >= latestUnreadMessageIndex!) {
         lastReadMessageKey = null;
         latestUnreadMessageIndex = null;
-        if (showLastUnreadButton.value != false) {
-          showLastUnreadButton.value = false;
-        }
+
+        SchedulerBinding.instance?.addPostFrameCallback((timeStamp) {
+          if (showLastUnreadButton.value != false) {
+            showLastUnreadButton.value = false;
+          }
+        });
       }
     }
   }
@@ -280,9 +284,11 @@ class ChatListState extends State<ChatList> {
     if (widget.hasMoreMsgs && loadNextMessageOffset > 0.0) {
       if (offset >= targetNextOffset &&
           nextBottomScrollOffset < targetNextOffset) {
-        if (!refreshController.isLoading) {
-          refreshController.requestLoading();
-        }
+        SchedulerBinding.instance?.addPostFrameCallback((timeStamp) async {
+          if (!refreshController.isLoading) {
+            await refreshController.requestLoading(needMove: false);
+          }
+        });
       }
     }
 
@@ -292,19 +298,25 @@ class ChatListState extends State<ChatList> {
     final torrentDistance = widget.offsetToTriggerLoadPrev ?? 0.0;
     if (widget.hasPrevMsgs && torrentDistance > 0.0) {
       if (offset <= torrentDistance && prevScrollOffset > torrentDistance) {
-        if (!refreshController.isRefresh) {
-          refreshController.requestRefresh();
-        }
+        SchedulerBinding.instance?.addPostFrameCallback((timeStamp) {
+          if (!refreshController.isRefresh) {
+            refreshController.requestRefresh(needMove: false);
+          }
+        });
       }
     }
     prevScrollOffset = offset;
 
+    var showTop = false;
+
     /// Handle move to top button display or hide
     if (offset > widget.offsetToShowScrollToTop) {
-      isShowMoveToTop.value = true;
-    } else {
-      isShowMoveToTop.value = false;
+      showTop = true;
     }
+
+    SchedulerBinding.instance?.addPostFrameCallback((timeStamp) {
+      isShowMoveToTop.value = showTop;
+    });
   }
 
   @override
@@ -312,8 +324,10 @@ class ChatListState extends State<ChatList> {
     listViewController.sliverController.onPaintItemPositionsCallback =
         (widgetHeight, positions) {
       itemPositions = positions;
-      _determineShowNewMsgCount();
-      _determineShowLatestUnreadMsgButton();
+      SchedulerBinding.instance?.addPostFrameCallback((timeStamp) {
+        _determineShowNewMsgCount();
+        _determineShowLatestUnreadMsgButton();
+      });
     };
 
     listViewController.addListener(_handleScrolling);
@@ -576,6 +590,9 @@ class ChatListState extends State<ChatList> {
   void dispose() {
     listViewController.dispose();
     refreshController.dispose();
+    isShowMoveToTop.dispose();
+    newMessageCount.dispose();
+    showLastUnreadButton.dispose();
     super.dispose();
   }
 }
